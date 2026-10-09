@@ -332,28 +332,16 @@ body[data-mode='always'] .stage-backdrop {
   height: 120%;
   background-size: cover;
   background-position: center;
-  filter: blur(28px) saturate(1.4) brightness(0.38);
+  filter: blur(20px) saturate(1.3) brightness(0.38);
   opacity: 0;
-  transform: scale(1.1) translate3d(0, 0, 0);
+  transform: translate3d(0, 0, 0);
   transition: opacity 1.4s cubic-bezier(0.16, 1, 0.3, 1);
   will-change: opacity;
-  animation: backdrop-breathe 28s ease-in-out infinite alternate;
+  contain: strict;
 }
 
 .backdrop-art.active {
   opacity: 1;
-}
-
-@keyframes backdrop-breathe {
-  0% {
-    transform: scale(1.1) translate(0, 0);
-  }
-  50% {
-    transform: scale(1.18) translate(-1.5%, 1%);
-  }
-  100% {
-    transform: scale(1.14) translate(1.5%, -1%);
-  }
 }
 
 .backdrop-vignette {

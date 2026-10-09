@@ -8,7 +8,8 @@ import { runSnapshots } from './snapshot'
 // Hyprlyric never plays media itself, so it must not claim the keyboard media keys.
 app.commandLine.appendSwitch('disable-features', 'HardwareMediaKeyHandling,MediaSessionService')
 // Performance optimizations: reduce background render load & memory footprint
-app.commandLine.appendSwitch('disable-background-timer-throttling')
+// Prefer power-saving integrated GPU over high-power discrete GPU on dual-GPU laptops
+app.commandLine.appendSwitch('force_low_power_gpu')
 app.commandLine.appendSwitch('enable-gpu-rasterization')
 app.commandLine.appendSwitch('enable-zero-copy')
 app.commandLine.appendSwitch('js-flags', '--max-old-space-size=256')

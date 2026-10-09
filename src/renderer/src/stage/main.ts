@@ -25,6 +25,7 @@ let palette: Palette = { ...DEFAULT_PALETTE }
 let mode: ShowOn = 'lock'
 let snapshotMode = false
 let loopRunning = false
+let loopTimeout: ReturnType<typeof setTimeout> | null = null
 let pendingState: StageState | null = null
 
 // Text is measured on a canvas, so the bundled font must be ready before the first layout.
@@ -101,44 +102,71 @@ function render(songMs: number, wallMs: number): boolean {
   return busy
 }
 
+function stopLoop(): void {
+  loopRunning = false
+  if (loopTimeout !== null) {
+    clearTimeout(loopTimeout)
+    loopTimeout = null
+  }
+}
+
 function loop(): void {
-  if (snapshotMode) {
-    loopRunning = false
+  if (snapshotMode || document.hidden) {
+    stopLoop()
     return
   }
   const started = performance.now()
   const songMs = clock.now(started, Date.now())
   const busy = render(songMs, started)
   const rates = style?.fps ?? FRAME_RATE[mode]
-  const fps = rates[busy ? 'busy' : 'idle']
+  const fps = Math.min(rates[busy ? 'busy' : 'idle'], 60)
 
   // If not playing and not busy animating, sleep at low power (5 FPS) instead of running continuous RAF
   if (!clock.playing && !busy && mode !== 'always') {
-    setTimeout(() => {
-      if (loopRunning) requestAnimationFrame(loop)
+    loopTimeout = setTimeout(() => {
+      loopTimeout = null
+      if (loopRunning && !document.hidden) requestAnimationFrame(loop)
     }, 200)
     return
   }
 
-  if (fps >= 60) {
-    requestAnimationFrame(loop)
-    return
-  }
-  // Wait out most of the frame budget, then align the next frame to vsync — but never
-  // sleep through the start of the next word, or it would light up a frame late.
-  let wait = 1000 / fps - (performance.now() - started) - 8
+  // Cap frame rate on high refresh displays (144Hz/165Hz/240Hz) to prevent massive GPU/CPU churn
+  const frameBudget = 1000 / fps
+  const elapsed = performance.now() - started
+  let wait = frameBudget - elapsed - 4
+
   if (model && clock.playing) {
     const until = msUntilNextWord(model, songMs) - 12
     if (until > 0) wait = Math.min(wait, until)
   }
-  setTimeout(() => requestAnimationFrame(loop), Math.max(2, wait))
+
+  if (wait > 2) {
+    loopTimeout = setTimeout(() => {
+      loopTimeout = null
+      if (loopRunning && !document.hidden) requestAnimationFrame(loop)
+    }, wait)
+  } else {
+    requestAnimationFrame(loop)
+  }
 }
 
 function startLoop(): void {
-  if (loopRunning || snapshotMode) return
+  if (loopRunning || snapshotMode || document.hidden) return
   loopRunning = true
+  if (loopTimeout !== null) {
+    clearTimeout(loopTimeout)
+    loopTimeout = null
+  }
   requestAnimationFrame(loop)
 }
+
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) {
+    startLoop()
+  } else {
+    stopLoop()
+  }
+})
 
 const nextFrame = (): Promise<void> => new Promise((resolve) => requestAnimationFrame(() => resolve()))
 

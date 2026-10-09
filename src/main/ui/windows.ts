@@ -14,7 +14,7 @@ export function secureWebPreferences(extra: WebPreferences = {}): WebPreferences
     nodeIntegration: false,
     webSecurity: true,
     spellcheck: false,
-    backgroundThrottling: false,
+    backgroundThrottling: true,
     ...extra
   }
 }
