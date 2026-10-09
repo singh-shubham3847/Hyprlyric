@@ -1,0 +1,11 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "composite": true,
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "types": ["vite/client"],
+    "paths": { "@shared/*": ["./src/shared/*"] },
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.web.tsbuildinfo"
+  },
+  "include": ["src/renderer/src/**/*", "src/shared/**/*", "src/preload/api.d.ts"]
+}

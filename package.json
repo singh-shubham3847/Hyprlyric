@@ -1,0 +1,57 @@
+{
+  "name": "hyprlyric",
+  "productName": "Hyprlyric",
+  "version": "1.0.1",
+  "description": "Hyprlyric: Ultra high-performance 3D kinetic synchronized lyrics visualizer for Spotify and Apple Music on Windows.",
+  "private": true,
+  "main": "./out/main/index.js",
+  "author": "singh-shubham3847 (https://github.com/singh-shubham3847)",
+  "license": "MIT",
+  "homepage": "https://github.com/singh-shubham3847/hyprlyric#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/singh-shubham3847/hyprlyric.git"
+  },
+  "bugs": {
+    "url": "https://github.com/singh-shubham3847/hyprlyric/issues"
+  },
+  "keywords": [
+    "lyrics",
+    "synced-lyrics",
+    "word-by-word",
+    "spotify",
+    "apple-music",
+    "windows",
+    "electron",
+    "lock-screen"
+  ],
+  "scripts": {
+    "dev": "electron-vite dev",
+    "start": "electron-vite preview",
+    "build": "tsc --noEmit -p tsconfig.node.json --composite false && tsc --noEmit -p tsconfig.web.json --composite false && electron-vite build",
+    "typecheck": "tsc --noEmit -p tsconfig.node.json --composite false && tsc --noEmit -p tsconfig.web.json --composite false",
+    "typecheck:node": "tsc --noEmit -p tsconfig.node.json --composite false",
+    "typecheck:web": "tsc --noEmit -p tsconfig.web.json --composite false",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "icons": "node scripts/gen-fluent-icons.mjs && electron scripts/make-icons.mjs",
+    "snapshot": "electron-vite build && electron . --snapshot=snapshots",
+    "package": "pnpm run build && node scripts/package-win.mjs",
+    "installer": "pnpm run package",
+    "banner": "electron scripts/make-banner.mjs",
+    "fake-player": "electron scripts/fake-player/main.cjs",
+    "check:lrclib": "vitest run --config vitest.live.config.ts"
+  },
+  "devDependencies": {
+    "@electron/packager": "20.3.0",
+    "@fontsource-variable/inter": "5.3.0",
+    "@iconify-json/fluent": "1.2.58",
+    "@types/node": "^24.9.0",
+    "electron": "44.4.4",
+    "electron-vite": "5.0.0",
+    "typescript": "6.0.3",
+    "vite": "^7.0.0",
+    "vitest": "5.0.1",
+    "yaml": "2.9.1"
+  }
+}

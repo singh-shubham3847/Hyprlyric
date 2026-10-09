@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; media-src blob:" />
+    <title>hyprlyric fake player</title>
+  </head>
+  <body>
+    <audio id="audio"></audio>
+    <script>
+      const q = new URLSearchParams(location.search)
+      const seconds = Number(q.get('seconds') || 40)
+      const start = Number(q.get('start') || 0)
+
+      // A 40 Hz tone at -66 dBFS: far below hearing on laptop speakers, but not digital silence,
+      // so Chromium treats it as real playback and publishes the media session to Windows.
+      function toneWav(duration) {
+        const rate = 8000
+        const n = Math.floor(rate * duration)
+        const buf = new ArrayBuffer(44 + n * 2)
+        const v = new DataView(buf)
+        const str = (o, s) => [...s].forEach((c, i) => v.setUint8(o + i, c.charCodeAt(0)))
+        str(0, 'RIFF'); v.setUint32(4, 36 + n * 2, true); str(8, 'WAVE'); str(12, 'fmt ')
+        v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true)
+        v.setUint32(24, rate, true); v.setUint32(28, rate * 2, true); v.setUint16(32, 2, true)
+        v.setUint16(34, 16, true); str(36, 'data'); v.setUint32(40, n * 2, true)
+        const amp = 32767 * Math.pow(10, -66 / 20)
+        for (let i = 0; i < n; i++) v.setInt16(44 + i * 2, Math.round(amp * Math.sin((2 * Math.PI * 40 * i) / rate)), true)
+        return new Blob([buf], { type: 'audio/wav' })
+      }
+
+      const audio = document.getElementById('audio')
+      audio.src = URL.createObjectURL(toneWav(seconds))
+      audio.currentTime = start
+
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: q.get('title'),
+        artist: q.get('artist'),
+        album: q.get('album')
+      })
+      const report = () => {
+        if (!Number.isFinite(audio.duration)) return
+        navigator.mediaSession.setPositionState({
+          duration: audio.duration,
+          position: Math.min(audio.currentTime, audio.duration),
+          playbackRate: audio.playbackRate
+        })
+      }
+      audio.addEventListener('loadedmetadata', report)
+      audio.addEventListener('play', report)
+      audio.addEventListener('seeked', report)
+      setInterval(report, 1000)
+      audio.addEventListener('ended', () => console.log('ended'))
+      audio.play().then(
+        () => console.log('playing'),
+        (err) => console.log('play failed: ' + err)
+      )
+    </script>
+  </body>
+</html>

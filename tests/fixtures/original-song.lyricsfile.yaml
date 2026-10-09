@@ -1,0 +1,21 @@
+version: "1.0"
+metadata:
+  title: Paper Lanterns
+  artist: Lantern Test Band
+  album: Fixtures
+  duration_ms: 32000
+  instrumental: false
+lines:
+- text: Paper lanterns drifting over quiet water
+  start_ms: 1000
+  end_ms: 4200
+- text: Every window keeps a small and patient flame
+  start_ms: 4200
+  end_ms: 7600
+- text: Hold the light a little longer
+  start_ms: 18000
+  end_ms: 20400
+plain: |
+  Paper lanterns drifting over quiet water
+  Every window keeps a small and patient flame
+  Hold the light a little longer

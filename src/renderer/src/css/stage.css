@@ -1,0 +1,500 @@
+@import '@fontsource-variable/inter';
+
+:root {
+  --lyric: #dc372a;
+  --highlight: #ca415e;
+  --highlight-text: #fff1f3;
+  --secondary: #e7b9c2;
+  color-scheme: dark;
+}
+
+html,
+body {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: transparent;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+body[data-mode='lock'] {
+  background: #000;
+  cursor: none;
+}
+
+#stage {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  font-family: 'Inter Variable', 'Segoe UI Variable Display', 'Segoe UI', sans-serif;
+  font-weight: 700;
+  font-synthesis: none;
+  text-rendering: geometricPrecision;
+}
+
+/* ---------- Tesseract / Ship (Invisible 3D Kinetic Word-Cube) ---------- */
+
+.ship-scene,
+.tesseract-scene {
+  position: absolute;
+  inset: 0;
+  perspective: 850px;
+  perspective-origin: 50% 50%;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.ship-camera,
+.tesseract-camera {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+
+.ship-cube-pivot,
+.tesseract-cube-pivot {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform-style: preserve-3d;
+  transform-origin: 50% 50% 0;
+  will-change: transform;
+}
+
+body[data-mode='lock'] .ship-cube-pivot,
+body[data-mode='lock'] .tesseract-cube-pivot {
+  top: 62%;
+}
+
+.ship-cube,
+.tesseract-cube {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  transform-origin: 50% 50% 0;
+  will-change: transform;
+}
+
+.ship-face,
+.tesseract-face {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  transform-origin: 50% 50% 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  padding: 1.2em 1.6em;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  backface-visibility: hidden;
+  will-change: transform, opacity;
+}
+
+.ship-face-words,
+.tesseract-face-words {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.32em 0.44em;
+  text-align: center;
+  width: 100%;
+  transform-style: preserve-3d;
+}
+
+.ship-word,
+.tesseract-word {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.16em 0.38em 0.20em;
+  line-height: 1.05;
+  letter-spacing: -0.025em;
+  white-space: nowrap;
+  font-weight: 700;
+  border-radius: 0.26em;
+  transform-origin: 50% 50%;
+  will-change: transform, opacity;
+}
+
+.ship-box,
+.tesseract-box {
+  position: absolute;
+  inset: 0;
+  border-radius: 0.26em;
+  transform-origin: 0 50%;
+  z-index: 0;
+  box-shadow: 0 0.12em 0.6em rgba(0, 0, 0, 0.45);
+}
+
+.ship-text,
+.tesseract-text {
+  position: relative;
+  z-index: 1;
+  display: block;
+}
+
+.ship-icon,
+.tesseract-icon {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 0.9em;
+  height: 0.9em;
+  margin-left: 0.22em;
+  transform-origin: 50% 50%;
+}
+
+.ship-icon svg,
+.tesseract-icon svg {
+  width: 100%;
+  height: 100%;
+}
+
+.ship-icon.emoji,
+.tesseract-icon.emoji {
+  width: auto;
+  font-family: 'Segoe UI Emoji', 'Segoe UI Symbol', sans-serif;
+  font-size: 0.88em;
+  line-height: 1;
+}
+
+body[data-mode='always'] .ship-text,
+body[data-mode='always'] .tesseract-text {
+  text-shadow: 0 0.04em 0.2em rgba(0, 0, 0, 0.75);
+}
+
+/* ---------- Fisheye ---------- */
+
+.fisheye,
+.fisheye-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* ---------- Visual ---------- */
+
+.visual-layer {
+  position: absolute;
+  left: 50%;
+  top: 60%;
+  width: 0;
+  height: 0;
+}
+
+.visual-word {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.24em;
+  white-space: nowrap;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  will-change: transform, opacity, filter;
+}
+
+.visual-icon {
+  display: inline-flex;
+  width: 0.9em;
+  height: 0.9em;
+  transform-origin: 50% 60%;
+}
+
+.visual-icon svg {
+  width: 100%;
+  height: 100%;
+}
+
+.visual-icon.emoji {
+  width: auto;
+  font-family: 'Segoe UI Emoji', 'Segoe UI Symbol', sans-serif;
+  font-size: 0.86em;
+  line-height: 1;
+}
+
+body[data-mode='always'] .visual-text {
+  text-shadow: 0 0.02em 0.14em rgba(0, 0, 0, 0.45);
+}
+
+/* ---------- "Press Esc to close" ---------- */
+
+.stage-hint {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 5vh;
+  z-index: 10;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.6);
+  font-family: 'Inter Variable', 'Segoe UI', sans-serif;
+  font-size: 1.9vh;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.stage-hint.show {
+  animation: stage-hint 3.4s ease forwards;
+}
+
+@keyframes stage-hint {
+  0% {
+    opacity: 0;
+  }
+  12% {
+    opacity: 1;
+  }
+  78% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* ---------- Lock-style clock ---------- */
+
+.lock-clock {
+  position: fixed;
+  top: 7vh;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.92);
+  font-family: 'Inter Variable', 'Segoe UI Variable Display', 'Segoe UI', sans-serif;
+  pointer-events: none;
+}
+
+.lock-clock[hidden] {
+  display: none;
+}
+
+.lock-time {
+  font-size: 9.5vh;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+.lock-date {
+  margin-top: 1.2vh;
+  font-size: 2.4vh;
+  font-weight: 500;
+  opacity: 0.85;
+}
+
+/* ---------- Ambient Album Art Backdrop ---------- */
+
+.stage-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+body[data-mode='lock'] .stage-backdrop.visible {
+  opacity: 1;
+}
+
+body[data-mode='always'] .stage-backdrop {
+  display: none !important;
+}
+
+.backdrop-art {
+  position: absolute;
+  inset: -10%;
+  width: 120%;
+  height: 120%;
+  background-size: cover;
+  background-position: center;
+  filter: blur(28px) saturate(1.4) brightness(0.38);
+  opacity: 0;
+  transform: scale(1.1) translate3d(0, 0, 0);
+  transition: opacity 1.4s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity;
+  animation: backdrop-breathe 28s ease-in-out infinite alternate;
+}
+
+.backdrop-art.active {
+  opacity: 1;
+}
+
+@keyframes backdrop-breathe {
+  0% {
+    transform: scale(1.1) translate(0, 0);
+  }
+  50% {
+    transform: scale(1.18) translate(-1.5%, 1%);
+  }
+  100% {
+    transform: scale(1.14) translate(1.5%, -1%);
+  }
+}
+
+.backdrop-vignette {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    circle at 50% 50%,
+    rgba(0, 0, 0, 0.32) 0%,
+    rgba(0, 0, 0, 0.68) 55%,
+    rgba(0, 0, 0, 0.94) 100%
+  );
+  pointer-events: none;
+}
+
+/* ---------- Lock-screen Now-Playing HUD ---------- */
+
+.lock-now-playing {
+  position: fixed;
+  left: 40px;
+  bottom: 36px;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-width: 280px;
+  max-width: 440px;
+  padding: 12px 18px 12px 14px;
+  background: rgba(18, 18, 24, 0.62);
+  backdrop-filter: blur(28px) saturate(1.6);
+  -webkit-backdrop-filter: blur(28px) saturate(1.6);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 20px;
+  box-shadow:
+    0 16px 36px rgba(0, 0, 0, 0.55),
+    0 2px 8px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  color: #fff;
+  opacity: 0;
+  transform: translateY(12px) scale(0.98);
+  pointer-events: none;
+  transition:
+    opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+body[data-mode='lock'] .lock-now-playing.visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+}
+
+body[data-mode='always'] .lock-now-playing {
+  display: none !important;
+}
+
+.now-playing-art-wrap {
+  position: relative;
+  width: 52px;
+  height: 52px;
+  flex-shrink: 0;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.45);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.now-playing-art {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.now-playing-fallback {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  color: var(--secondary, #e7b9c2);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.now-playing-meta {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.now-playing-title {
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.25;
+  color: #ffffff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  letter-spacing: -0.01em;
+}
+
+.now-playing-artist {
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.3;
+  color: var(--secondary, rgba(255, 255, 255, 0.72));
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 2px;
+}
+
+.now-playing-progress {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.now-playing-bar {
+  flex: 1;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.16);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.now-playing-fill {
+  height: 100%;
+  width: 0%;
+  background: var(--highlight, #ca415e);
+  box-shadow: 0 0 8px var(--highlight, #ca415e);
+  border-radius: 2px;
+  transition: width 0.15s linear;
+}
+
+.now-playing-time {
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.55);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
