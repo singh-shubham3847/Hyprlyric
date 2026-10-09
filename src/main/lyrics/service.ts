@@ -48,6 +48,8 @@ export interface LyricsServiceDeps {
  * (word timing, when enabled) are asked in parallel and real word timing wins.
  * Errors are never cached, so the next play retries.
  */
+const WORD_GRACE_MS = 600
+
 export class LyricsService {
   private readonly now: () => number
 
@@ -55,25 +57,59 @@ export class LyricsService {
     this.now = deps.now ?? Date.now
   }
 
-  async get(q: TrackQuery): Promise<LyricsResult> {
+  async get(q: TrackQuery, onEarlyFound?: (result: LyricsResult) => void): Promise<LyricsResult> {
     const local = await this.fromLocal(q)
-    if (local) return local
+    if (local) {
+      onEarlyFound?.(local)
+      return local
+    }
 
     const useWords = this.deps.wordLevel?.enabled() ?? false
     const key = cacheKey(q)
     const cached = await this.deps.cache.get(key)
     if (cached) {
-      if (useWords && !cached.yrc && !cached.wordChecked) {
-        // Cached before word timing was available (or NetEase failed last time): ask once.
-        const upgraded = await this.askWordLevel(q, key, cached)
-        if (upgraded) return upgraded
+      const cachedResult = this.fromEntry(cached, q, 'cache', useWords)
+      if (cachedResult.status === 'found') {
+        onEarlyFound?.(cachedResult)
       }
-      return this.fromEntry(cached, q, 'cache', useWords)
+      if (useWords && !cached.yrc && !cached.wordChecked) {
+        // Cached before word timing was available: ask NetEase once.
+        const upgraded = await this.askWordLevel(q, key, cached)
+        if (upgraded) {
+          onEarlyFound?.(upgraded)
+          return upgraded
+        }
+      }
+      return cachedResult
     }
 
-    const [line, word] = await Promise.all([
-      this.deps.client.find(q),
-      useWords ? this.findWords(q) : Promise.resolve<NeteaseResult | null>(null)
+    const linePromise = this.deps.client.find(q)
+    const wordPromise = useWords ? this.findWords(q) : Promise.resolve<NeteaseResult | null>(null)
+
+    // Notify caller as soon as LRCLIB returns found lyrics so user sees words immediately!
+    void linePromise.then((line) => {
+      if (line.status === 'found') {
+        const lyrics = recordToTimedLyrics(line.record, q.durationMs)
+        if (lyrics) {
+          onEarlyFound?.({ status: 'found', lyrics, source: 'lrclib' })
+        }
+      }
+    })
+
+    // If LRCLIB is already found, wait at most WORD_GRACE_MS for NetEase native word timing.
+    // If NetEase is hanging, don't stall the song - resolve with LRCLIB!
+    const [line, word] = await Promise.race([
+      Promise.all([linePromise, wordPromise]),
+      linePromise.then(async (line) => {
+        if (line.status === 'found' && useWords) {
+          const word = await Promise.race([
+            wordPromise,
+            new Promise<null>((resolve) => setTimeout(() => resolve(null), WORD_GRACE_MS))
+          ])
+          return [line, word] as const
+        }
+        return new Promise<never>(() => {})
+      })
     ])
 
     const wordLyrics = word?.status === 'found' ? yrcToTimedLyrics(word.yrc, q.durationMs) : null
@@ -89,6 +125,26 @@ export class LyricsService {
       }
       await this.save(key, entry)
       return { status: 'found', lyrics: wordLyrics, source: 'netease' }
+    }
+
+    // In case wordPromise resolves later with native word timing in background, upgrade cache & notify:
+    if (useWords && word === null) {
+      void wordPromise.then(async (lateWord) => {
+        if (lateWord?.status === 'found') {
+          const lateLyrics = yrcToTimedLyrics(lateWord.yrc, q.durationMs)
+          if (lateLyrics) {
+            const entry: CacheEntry = {
+              status: 'found',
+              ...(line.status === 'found' ? { record: line.record } : {}),
+              yrc: lateWord.yrc,
+              wordChecked: true,
+              fetchedAt: this.now()
+            }
+            await this.save(key, entry)
+            onEarlyFound?.({ status: 'found', lyrics: lateLyrics, source: 'netease' })
+          }
+        }
+      })
     }
 
     if (line.status === 'error') {

@@ -36,8 +36,8 @@
     "test:watch": "vitest",
     "icons": "node scripts/gen-fluent-icons.mjs && electron scripts/make-icons.mjs",
     "snapshot": "electron-vite build && electron . --snapshot=snapshots",
-    "package": "pnpm run build && node scripts/package-win.mjs",
-    "installer": "pnpm run package",
+    "package": "electron-vite build && node scripts/package-win.mjs",
+    "installer": "electron-vite build && node scripts/package-win.mjs",
     "banner": "electron scripts/make-banner.mjs",
     "fake-player": "electron scripts/fake-player/main.cjs",
     "check:lrclib": "vitest run --config vitest.live.config.ts"

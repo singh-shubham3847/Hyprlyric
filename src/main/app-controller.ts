@@ -79,7 +79,7 @@ export class AppController {
       cache: new LyricsCache(this.paths.cacheDir),
       client: new LrclibClient({ userAgent: `Hyprlyric/${app.getVersion()} (${HOMEPAGE})` }),
       log: this.log,
-      wordLevel: { client: new NeteaseClient(), enabled: () => this.settings.get().wordLevel }
+      wordLevel: { client: new NeteaseClient({ timeoutMs: 2500 }), enabled: () => this.settings.get().wordLevel }
     })
     this.lastWordLevel = this.settings.get().wordLevel
     this.power = new PowerKeeper(this.log)
@@ -188,12 +188,24 @@ export class AppController {
     if (token !== this.lookupToken) return
     let result: LyricsResult
     try {
-      result = await this.lyrics.get({
-        title: track.title,
-        artist: track.artist,
-        album: track.album,
-        durationMs: track.durationMs
-      })
+      result = await this.lyrics.get(
+        {
+          title: track.title,
+          artist: track.artist,
+          album: track.album,
+          durationMs: track.durationMs
+        },
+        (early) => {
+          if (token !== this.lookupToken) return
+          if (early.status === 'found' && early.lyrics) {
+            this.status = early.status
+            this.timed = early.lyrics
+            const detail = `, ${early.lyrics.lines.length} lines, ${early.lyrics.wordTiming} word timing`
+            this.log(`lyrics: ${early.status}${early.source ? ` (${early.source})` : ''}${detail} [fast-display]`)
+            this.refresh()
+          }
+        }
+      )
     } catch (err) {
       this.log(`lyrics: lookup failed (${String(err)})`)
       result = { status: 'error', lyrics: null }

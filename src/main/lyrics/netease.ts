@@ -55,17 +55,32 @@ export class NeteaseClient {
   private readonly fetch: FetchLike
   private readonly timeoutMs: number
   private readonly baseUrl: string
+  private consecutiveFailures = 0
+  private disabledUntil = 0
 
   constructor(opts: { fetch?: FetchLike; timeoutMs?: number; baseUrl?: string } = {}) {
     this.fetch = opts.fetch ?? ((url, init) => globalThis.fetch(url, init))
-    this.timeoutMs = opts.timeoutMs ?? 10_000
+    this.timeoutMs = opts.timeoutMs ?? 2500
     this.baseUrl = (opts.baseUrl ?? 'https://music.163.com').replace(/\/$/, '')
   }
 
   async find(q: TrackQuery): Promise<NeteaseResult> {
+    if (Date.now() < this.disabledUntil) {
+      return { status: 'error', message: 'NetEase temporarily suspended after repeated timeouts' }
+    }
+
     const terms = [cleanTitle(q.title), q.artist.trim() ? primaryArtist(q.artist) : q.album.trim()].filter(Boolean).join(' ')
     const search = await this.get(`/api/cloudsearch/pc?${new URLSearchParams({ s: terms, type: '1', offset: '0', limit: '10' })}`)
-    if (search.kind === 'error') return { status: 'error', message: search.message }
+    if (search.kind === 'error') {
+      this.consecutiveFailures++
+      if (this.consecutiveFailures >= 2) {
+        this.disabledUntil = Date.now() + 5 * 60 * 1000
+      }
+      return { status: 'error', message: search.message }
+    }
+
+    this.consecutiveFailures = 0
+    this.disabledUntil = 0
 
     const candidates = toSongs(search.body)
       .map((song) => ({ song, score: scoreMatch(q, { title: song.title, artist: song.artist, album: song.album, durationSec: song.durationSec }, MAX_GAP_S) }))
@@ -87,7 +102,14 @@ export class NeteaseClient {
       if (yrc && (yrc.match(TIMED_LINE)?.length ?? 0) >= MIN_TIMED_LINES) return { status: 'found', yrc, song }
     }
     // Only "every request failed" is an error; an answer without word timing means not found.
-    return failure && !answered ? { status: 'error', message: failure } : { status: 'not-found' }
+    if (failure && !answered) {
+      this.consecutiveFailures++
+      if (this.consecutiveFailures >= 2) {
+        this.disabledUntil = Date.now() + 5 * 60 * 1000
+      }
+      return { status: 'error', message: failure }
+    }
+    return { status: 'not-found' }
   }
 
   private async get(path: string): Promise<Reply> {
