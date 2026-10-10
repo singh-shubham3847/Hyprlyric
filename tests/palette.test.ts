@@ -98,3 +98,30 @@ describe('paletteFromColors', () => {
     }
   })
 })
+
+describe('theme presets', () => {
+  it('defines valid hex colors for all presets with readable contrast', async () => {
+    const { THEME_PRESETS, matchPreset } = await import('../src/shared/theme-presets')
+    const { HEX_COLOR } = await import('../src/shared/palette-defaults')
+
+    expect(THEME_PRESETS.length).toBeGreaterThanOrEqual(8)
+    for (const preset of THEME_PRESETS) {
+      expect(HEX_COLOR.test(preset.colors.lyric)).toBe(true)
+      expect(HEX_COLOR.test(preset.colors.highlight)).toBe(true)
+      expect(HEX_COLOR.test(preset.colors.secondary)).toBe(true)
+
+      const fullPalette = paletteFromColors(preset.colors)
+      expect(contrastRatio(fullPalette.highlightText, preset.colors.highlight)).toBeGreaterThanOrEqual(3)
+    }
+
+    const defaultMatch = matchPreset({ ...DEFAULT_COLORS })
+    expect(defaultMatch?.id).toBe('crimson-pulse')
+
+    const upperCaseColors = {
+      lyric: DEFAULT_COLORS.lyric.toUpperCase(),
+      highlight: DEFAULT_COLORS.highlight.toUpperCase(),
+      secondary: DEFAULT_COLORS.secondary.toUpperCase()
+    }
+    expect(matchPreset(upperCaseColors)?.id).toBe('crimson-pulse')
+  })
+})

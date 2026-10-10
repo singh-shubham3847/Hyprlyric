@@ -1,6 +1,7 @@
 import '../css/colors.css'
 import type { ColorsState } from '@shared/ipc'
 import type { ColorRole } from '@shared/types'
+import { THEME_PRESETS, matchPreset } from '@shared/theme-presets'
 
 const api = window.lyricsApp.colors
 
@@ -21,6 +22,23 @@ root.innerHTML = `
     </label>
   </header>
   <p class="note" id="note"></p>
+
+  <h2 class="section-title">Theme Presets</h2>
+  <div class="preset-grid">
+    ${THEME_PRESETS.map(
+      (p) => `
+      <button type="button" class="preset-card" data-preset-id="${p.id}" title="${p.description}">
+        <div class="preset-swatches">
+          <span class="swatch-dot" style="background:${p.colors.lyric}"></span>
+          <span class="swatch-dot" style="background:${p.colors.highlight}"></span>
+          <span class="swatch-dot" style="background:${p.colors.secondary}"></span>
+        </div>
+        <span class="preset-name">${p.name}</span>
+      </button>`
+    ).join('')}
+  </div>
+
+  <h2 class="section-title">Custom Colors</h2>
   <div class="wells">
     ${ROLES.map(
       (r) => `
@@ -31,23 +49,32 @@ root.innerHTML = `
       </label>`
     ).join('')}
   </div>
+
   <div class="preview" aria-hidden="true">
     <span class="p-lyric">sung</span>
     <span class="p-box"><span class="p-text">now</span></span>
     <span class="p-secondary">next</span>
   </div>
+
   <footer><button type="button" id="reset">Reset Colors</button></footer>
 `
 
 const auto = document.getElementById('auto') as HTMLInputElement
 const note = document.getElementById('note')!
 const wells = [...root.querySelectorAll<HTMLInputElement>('input[type=color]')]
+const presetCards = [...root.querySelectorAll<HTMLButtonElement>('.preset-card')]
 
 function render(state: ColorsState): void {
   auto.checked = state.autoSync
   note.textContent = state.autoSync
-    ? 'Colors follow the album art of whatever is playing. Pick a color to set your own.'
-    : 'Choose the lyric, highlight and secondary colors yourself, or turn on Auto Sync.'
+    ? 'Colors follow the album art of whatever is playing. Pick a preset or color to set your own.'
+    : 'Choose a curated theme preset, customize the colors individually, or turn on Auto Sync.'
+
+  const activePreset = !state.autoSync ? matchPreset(state.colors) : null
+  for (const card of presetCards) {
+    card.classList.toggle('active', card.dataset.presetId === activePreset?.id)
+  }
+
   for (const input of wells) {
     const role = input.dataset.role as ColorRole
     const shown = state.autoSync ? state.effective[role] : state.colors[role]
@@ -59,6 +86,16 @@ function render(state: ColorsState): void {
   s.setProperty('--highlight', state.effective.highlight)
   s.setProperty('--highlight-text', state.effective.highlightText)
   s.setProperty('--secondary', state.effective.secondary)
+}
+
+// Preset card clicks
+for (const card of presetCards) {
+  card.addEventListener('click', () => {
+    const preset = THEME_PRESETS.find((p) => p.id === card.dataset.presetId)
+    if (preset) {
+      api.setAll(preset.colors)
+    }
+  })
 }
 
 // The picker fires continuously while dragging; send at most once per frame.

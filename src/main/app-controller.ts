@@ -93,6 +93,7 @@ export class AppController {
       iconPath: this.paths.appIcon,
       state: () => this.colorsState(),
       setColor: (role, hex) => this.settings.update({ autoSync: false, colors: { ...this.settings.get().colors, [role]: hex } }),
+      setColors: (colors) => this.settings.update({ autoSync: false, colors: { ...this.settings.get().colors, ...colors } }),
       setAutoSync: (autoSync) => this.settings.update({ autoSync }),
       reset: () => this.settings.update({ colors: { ...DEFAULT_COLORS } })
     })
@@ -321,6 +322,7 @@ export class AppController {
       setShowOn: (showOn) => this.settings.update({ showOn }),
       setDisplay: (displayId) => this.settings.update({ displayId }),
       setAutoSync: (autoSync) => this.settings.update({ autoSync }),
+      setPreset: (preset) => this.settings.update({ autoSync: false, colors: { ...preset.colors } }),
       editColors: () => this.colors.open(),
       resetColors: () => this.settings.update({ colors: { ...DEFAULT_COLORS } }),
       showNow: () => void this.stage.openLock('hotkey'),

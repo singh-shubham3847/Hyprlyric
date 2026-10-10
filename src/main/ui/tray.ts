@@ -1,5 +1,6 @@
 import { Menu, Tray, nativeImage, type MenuItemConstructorOptions, type NativeImage } from 'electron'
 import { STYLE_IDS, STYLE_LABELS, type ColorRole, type LyricsStatus, type Palette, type ShowOn, type StyleId, type TrackInfo } from '@shared/types'
+import { THEME_PRESETS, matchPreset, type ThemePreset } from '@shared/theme-presets'
 import type { IdleMinutes, Settings } from '../settings'
 import { swatchBitmap } from './swatch'
 
@@ -19,6 +20,7 @@ export interface TrayActions {
   setShowOn(showOn: ShowOn): void
   setDisplay(id: number | null): void
   setAutoSync(on: boolean): void
+  setPreset(preset: ThemePreset): void
   editColors(role: ColorRole): void
   resetColors(): void
   showNow(): void
@@ -187,6 +189,16 @@ export class TrayMenu {
       { type: 'separator' },
       { label: 'Color', enabled: false },
       { label: 'Auto Sync', type: 'checkbox', checked: s.autoSync, click: (item) => a.setAutoSync(item.checked) },
+      {
+        label: 'Theme Presets',
+        submenu: THEME_PRESETS.map((p) => ({
+          label: p.name,
+          type: 'radio' as const,
+          checked: !s.autoSync && matchPreset(s.colors)?.id === p.id,
+          icon: this.swatch(p.colors.highlight),
+          click: () => a.setPreset(p)
+        }))
+      },
       { label: 'Lyric Text…', icon: this.swatch(m.palette.lyric), click: () => a.editColors('lyric') },
       { label: 'Highlight…', icon: this.swatch(m.palette.highlight), click: () => a.editColors('highlight') },
       { label: 'Secondary Text…', icon: this.swatch(m.palette.secondary), click: () => a.editColors('secondary') },

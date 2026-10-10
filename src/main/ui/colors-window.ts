@@ -7,19 +7,20 @@ import { harden, loadPage, secureWebPreferences } from './windows'
 
 const ROLES: readonly ColorRole[] = ['lyric', 'highlight', 'secondary']
 /** Content size (excluding the title bar), fitting every control without scrolling. */
-const WIDTH = 400
-const HEIGHT = 440
+const WIDTH = 420
+const HEIGHT = 580
 
 export interface ColorsWindowDeps {
   log: Log
   iconPath: string
   state: () => ColorsState
   setColor: (role: ColorRole, hex: string) => void
+  setColors: (colors: Record<ColorRole, string>) => void
   setAutoSync: (on: boolean) => void
   reset: () => void
 }
 
-/** Small settings window with the three colour wells and Auto Sync (opened from the tray). */
+/** Small settings window with theme presets, custom colour wells, and Auto Sync (opened from the tray). */
 export class ColorsWindow {
   private win: BrowserWindow | null = null
 
@@ -29,6 +30,16 @@ export class ColorsWindow {
       if (!this.fromOwn(e)) return
       if (!ROLES.includes(role as ColorRole) || typeof hex !== 'string' || !HEX_COLOR.test(hex)) return
       deps.setColor(role as ColorRole, hex.toLowerCase())
+    })
+    ipcMain.on(IPC.colorsSetAll, (e: IpcMainEvent, colors: unknown) => {
+      if (!this.fromOwn(e) || !colors || typeof colors !== 'object') return
+      const c = colors as Record<string, unknown>
+      const clean: Partial<Record<ColorRole, string>> = {}
+      for (const role of ROLES) {
+        if (typeof c[role] !== 'string' || !HEX_COLOR.test(c[role] as string)) return
+        clean[role] = (c[role] as string).toLowerCase()
+      }
+      deps.setColors(clean as Record<ColorRole, string>)
     })
     ipcMain.on(IPC.colorsAutoSync, (e: IpcMainEvent, on: unknown) => {
       if (this.fromOwn(e) && typeof on === 'boolean') deps.setAutoSync(on)

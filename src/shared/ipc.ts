@@ -9,6 +9,7 @@ export const IPC = {
   stageSnapshotDone: 'stage:snapshot-done',
   colorsGet: 'colors:get',
   colorsSet: 'colors:set',
+  colorsSetAll: 'colors:set-all',
   colorsAutoSync: 'colors:auto-sync',
   colorsReset: 'colors:reset',
   colorsState: 'colors:state'
@@ -71,6 +72,7 @@ export interface StageApi {
 export interface ColorsApi {
   get(): Promise<ColorsState>
   set(role: ColorRole, hex: string): void
+  setAll(colors: Record<ColorRole, string>): void
   setAutoSync(on: boolean): void
   reset(): void
   onState(cb: (state: ColorsState) => void): () => void

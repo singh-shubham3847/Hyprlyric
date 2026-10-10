@@ -25,6 +25,7 @@ const api: LyricsAppApi = {
   colors: {
     get: () => ipcRenderer.invoke(IPC.colorsGet),
     set: (role, hex) => ipcRenderer.send(IPC.colorsSet, role, hex),
+    setAll: (colors) => ipcRenderer.send(IPC.colorsSetAll, colors),
     setAutoSync: (on) => ipcRenderer.send(IPC.colorsAutoSync, on),
     reset: () => ipcRenderer.send(IPC.colorsReset),
     onState: (cb) => subscribe(IPC.colorsState, cb)
