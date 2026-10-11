@@ -636,16 +636,16 @@ export function createShip(withIcons = false): StageStyle {
 
         // 3D Lighting & Depth Shading:
         // Active face is in full spotlight; target face brightens up smoothly during roll;
-        // side and receding faces have natural spatial depth shading.
-        let faceBrightness = 0.45
-        let faceOpacity = 0.50
+        // side and adjacent faces stay clearly visible with high contrast and readable text.
+        let faceBrightness = 0.82
+        let faceOpacity = 0.88
 
         if (isCurrentFace) {
-          faceBrightness = isRotating ? lerp(1, 0.65, turnProgress) : 1
-          faceOpacity = isRotating ? lerp(1, 0.7, turnProgress) : 1
+          faceBrightness = isRotating ? lerp(1, 0.85, turnProgress) : 1
+          faceOpacity = 1
         } else if (isTargetFace) {
-          faceBrightness = isRotating ? lerp(0.5, 1, turnProgress) : 0.65
-          faceOpacity = isRotating ? lerp(0.55, 1, turnProgress) : 0.75
+          faceBrightness = isRotating ? lerp(0.85, 1, turnProgress) : 0.92
+          faceOpacity = isRotating ? lerp(0.90, 1, turnProgress) : 0.96
         }
 
         setStyle(face.faceEl, 'filter', `brightness(${faceBrightness.toFixed(3)})`)
@@ -718,13 +718,13 @@ export function createShip(withIcons = false): StageStyle {
             const isPreviousChunk = chunk.index < activeChunkIdx
             const isTargetFace = face.slotIndex === targetFaceIdx
             const sideColor = isTargetFace ? palette.highlightText : isPreviousChunk ? palette.lyric : palette.secondary
-            setStyle(el.root, 'transform', 'scale(0.94)')
-            setStyle(el.root, 'opacity', isTargetFace ? '0.90' : '0.70')
+            setStyle(el.root, 'transform', 'scale(0.96)')
+            setStyle(el.root, 'opacity', isTargetFace ? '0.96' : '0.86')
             setStyle(el.box, 'opacity', '0')
             setStyle(el.box, 'transform', 'scaleX(0)')
             setStyle(el.box, 'box-shadow', 'none')
             setStyle(el.text, 'color', sideColor)
-            setStyle(el.text, 'text-shadow', isTargetFace ? `0 0 14px ${rgba(palette.highlight, 0.45)}` : 'none')
+            setStyle(el.text, 'text-shadow', isTargetFace ? `0 0 16px ${rgba(palette.highlight, 0.55)}` : `0 0 8px rgba(0, 0, 0, 0.35)`)
             if (el.icon && el.iconRef?.kind === 'fluent') {
               if (el.iconColor !== sideColor) {
                 el.icon.innerHTML = fluentSvg(el.iconRef, sideColor)
