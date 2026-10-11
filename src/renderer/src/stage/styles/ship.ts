@@ -56,27 +56,129 @@ interface CycleStep {
   camPanY: number
 }
 
+const DEFAULT_STEP: CycleStep = {
+  face: 0,
+  yaw: 0,
+  pitch: 0,
+  baseYaw: -24,
+  basePitch: 14,
+  camPanX: -26,
+  camPanY: 0
+}
+
+function shortestAngle(fromAngle: number, toBase: number): number {
+  let diff = (((toBase - fromAngle) % 360) + 540) % 360 - 180
+  if (Math.abs(diff) === 180 && Math.random() > 0.5) {
+    diff = 180
+  }
+  return fromAngle + diff
+}
+
 /**
- * 8-step cardinal movement cycle visiting all 4 directions seamlessly without cumulative gimbal lock:
- * 0: Front face (0), turns Left (-90° yaw) onto Right face (1)
- * 1: Right face (1), turns Right (+90° yaw) back onto Front face (0)
- * 2: Front face (0), tumbles Down (+90° pitch) onto Top face (4)
- * 3: Top face (4), tumbles Up (-90° pitch) back onto Front face (0)
- * 4: Front face (0), turns Right (+90° yaw) onto Left face (3)
- * 5: Left face (3), turns Left (-90° yaw) back onto Front face (0)
- * 6: Front face (0), tumbles Up (-90° pitch) onto Bottom face (5)
- * 7: Bottom face (5), tumbles Down (+90° pitch) back onto Front face (0)
+ * Procedurally generates random 3D rotation steps using ALL 6 cube faces:
+ * 0: Front, 1: Right, 2: Back, 3: Left, 4: Top, 5: Bottom.
+ * Prioritizes least-visited faces so all 6 sides are used evenly and unpredictably.
  */
-const CYCLE: readonly CycleStep[] = [
-  { face: 0, yaw: 0, pitch: 0, baseYaw: -24, basePitch: 14, camPanX: -26, camPanY: 0 },
-  { face: 1, yaw: -90, pitch: 0, baseYaw: 24, basePitch: 14, camPanX: 26, camPanY: 0 },
-  { face: 0, yaw: 0, pitch: 0, baseYaw: 16, basePitch: 22, camPanX: 0, camPanY: 22 },
-  { face: 4, yaw: 0, pitch: 90, baseYaw: 16, basePitch: -22, camPanX: 0, camPanY: -22 },
-  { face: 0, yaw: 0, pitch: 0, baseYaw: 24, basePitch: 14, camPanX: 26, camPanY: 0 },
-  { face: 3, yaw: 90, pitch: 0, baseYaw: -24, basePitch: 14, camPanX: -26, camPanY: 0 },
-  { face: 0, yaw: 0, pitch: 0, baseYaw: 16, basePitch: -22, camPanX: 0, camPanY: -22 },
-  { face: 5, yaw: 0, pitch: -90, baseYaw: 16, basePitch: 22, camPanX: 0, camPanY: 22 }
-]
+function generateRandomSteps(numChunks: number): CycleStep[] {
+  if (numChunks <= 0) return []
+
+  const steps: CycleStep[] = []
+  const faceUsage = [0, 0, 0, 0, 0, 0]
+
+  let curFace = 0
+  let curYaw = 0
+  let curPitch = 0
+  faceUsage[0] = (faceUsage[0] ?? 0) + 1
+
+  steps.push({ ...DEFAULT_STEP })
+
+  for (let i = 1; i < numChunks; i++) {
+    // Pick the next face among the other 5 faces (never the current face)
+    const candidates = [0, 1, 2, 3, 4, 5].filter((f) => f !== curFace)
+
+    // Weight choices by lowest usage count + random noise
+    candidates.sort((a, b) => {
+      const scoreA = (faceUsage[a] ?? 0) * 10 + Math.random() * 8
+      const scoreB = (faceUsage[b] ?? 0) * 10 + Math.random() * 8
+      return scoreA - scoreB
+    })
+
+    const nextFace = candidates[0] ?? 0
+    faceUsage[nextFace] = (faceUsage[nextFace] ?? 0) + 1
+
+    let nextYaw = curYaw
+    let nextPitch = 0
+
+    if (nextFace === 4) {
+      // Top face
+      nextPitch = 90
+      nextYaw = shortestAngle(curYaw, 0)
+    } else if (nextFace === 5) {
+      // Bottom face
+      nextPitch = -90
+      nextYaw = shortestAngle(curYaw, 0)
+    } else {
+      // Horizontal face: 0 (Front), 1 (Right), 2 (Back), 3 (Left)
+      nextPitch = 0
+      const targetBase = nextFace === 0 ? 0 : nextFace === 1 ? -90 : nextFace === 2 ? 180 : 90
+      nextYaw = shortestAngle(curYaw, targetBase)
+    }
+
+    // Dynamic base tilt & cam pan
+    let baseYaw = -24
+    let basePitch = 14
+    let camPanX = 0
+    let camPanY = 0
+
+    if (nextFace === 4) {
+      baseYaw = (Math.random() > 0.5 ? 1 : -1) * (14 + Math.random() * 4)
+      basePitch = -20 - Math.random() * 4
+      camPanX = 0
+      camPanY = -22
+    } else if (nextFace === 5) {
+      baseYaw = (Math.random() > 0.5 ? 1 : -1) * (14 + Math.random() * 4)
+      basePitch = 20 + Math.random() * 4
+      camPanX = 0
+      camPanY = 22
+    } else if (nextFace === 1) {
+      baseYaw = 22 + Math.random() * 4
+      basePitch = 12 + Math.random() * 4
+      camPanX = 26
+      camPanY = 0
+    } else if (nextFace === 3) {
+      baseYaw = -22 - Math.random() * 4
+      basePitch = 12 + Math.random() * 4
+      camPanX = -26
+      camPanY = 0
+    } else if (nextFace === 2) {
+      baseYaw = (Math.random() > 0.5 ? 1 : -1) * (20 + Math.random() * 4)
+      basePitch = 14 + Math.random() * 4
+      camPanX = baseYaw > 0 ? 24 : -24
+      camPanY = 0
+    } else {
+      baseYaw = (Math.random() > 0.5 ? 1 : -1) * (22 + Math.random() * 4)
+      basePitch = 14 + Math.random() * 4
+      camPanX = baseYaw > 0 ? 24 : -24
+      camPanY = 0
+    }
+
+    steps.push({
+      face: nextFace,
+      yaw: nextYaw,
+      pitch: nextPitch,
+      baseYaw,
+      basePitch,
+      camPanX,
+      camPanY
+    })
+
+    curFace = nextFace
+    curYaw = nextYaw
+    curPitch = nextPitch
+  }
+
+  return steps
+}
 
 interface ChunkTransition {
   fromChunk: number
@@ -87,13 +189,13 @@ interface ChunkTransition {
   endMs: number
 }
 
-function buildTransitions(chunks: LyricChunk[]): ChunkTransition[] {
+function buildTransitions(chunks: LyricChunk[], steps: CycleStep[]): ChunkTransition[] {
   const trans: ChunkTransition[] = []
   for (let k = 0; k < chunks.length - 1; k++) {
     const cur = chunks[k]!
     const next = chunks[k + 1]!
-    const fromStep = CYCLE[k % CYCLE.length]!
-    const toStep = CYCLE[(k + 1) % CYCLE.length]!
+    const fromStep = steps[k] ?? DEFAULT_STEP
+    const toStep = steps[k + 1] ?? DEFAULT_STEP
 
     const gap = next.start - cur.end
     let duration = 460
@@ -201,6 +303,7 @@ export function createShip(withIcons = false): StageStyle {
   let cube: HTMLDivElement | null = null
   let model: LyricsModel | null = null
   let chunks: LyricChunk[] = []
+  let steps: CycleStep[] = []
   let transitions: ChunkTransition[] = []
   let palette: Palette = { ...DEFAULT_PALETTE }
   let mode: ShowOn = 'lock'
@@ -309,7 +412,8 @@ export function createShip(withIcons = false): StageStyle {
     setLyrics(next) {
       model = next
       chunks = next ? buildChunks(next) : []
-      transitions = next ? buildTransitions(chunks) : []
+      steps = next ? generateRandomSteps(chunks.length) : []
+      transitions = next ? buildTransitions(chunks, steps) : []
       for (const f of faces) f.currentChunkIndex = -1
     },
 
@@ -370,18 +474,20 @@ export function createShip(withIcons = false): StageStyle {
       let activeChunkIdx = 0
       let currentYaw = 0
       let currentPitch = 0
-      let curBaseYaw = CYCLE[0]!.baseYaw
-      let curBasePitch = CYCLE[0]!.basePitch
+      const initialStep = steps[0] ?? DEFAULT_STEP
+      let curBaseYaw = initialStep.baseYaw
+      let curBasePitch = initialStep.basePitch
       let turnProgress = 0
       let isRotating = false
       let activeTransition: ChunkTransition | null = null
 
       if (!transitions.length) {
         activeChunkIdx = 0
-        currentYaw = CYCLE[0]!.yaw
-        currentPitch = CYCLE[0]!.pitch
-        curBaseYaw = CYCLE[0]!.baseYaw
-        curBasePitch = CYCLE[0]!.basePitch
+        const step = initialStep
+        currentYaw = step.yaw
+        currentPitch = step.pitch
+        curBaseYaw = step.baseYaw
+        curBasePitch = step.basePitch
       } else if (t < transitions[0]!.startMs) {
         activeChunkIdx = 0
         const step = transitions[0]!.fromStep
@@ -449,8 +555,8 @@ export function createShip(withIcons = false): StageStyle {
       // The current step's face holds the active chunk.
       // The next step's face holds the upcoming chunk.
       // Remaining faces hold surrounding chunks so all sides display words in 3D.
-      const currentStep = CYCLE[activeChunkIdx % CYCLE.length]!
-      const nextStep = CYCLE[(activeChunkIdx + 1) % CYCLE.length]!
+      const currentStep = steps[activeChunkIdx] ?? steps[0] ?? DEFAULT_STEP
+      const nextStep = steps[activeChunkIdx + 1] ?? steps[activeChunkIdx] ?? steps[0] ?? DEFAULT_STEP
       const currentFaceIdx = currentStep.face
       const targetFaceIdx = nextStep.face
 
