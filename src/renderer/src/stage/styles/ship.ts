@@ -60,8 +60,8 @@ const DEFAULT_STEP: CycleStep = {
   face: 0,
   yaw: 0,
   pitch: 0,
-  baseYaw: -24,
-  basePitch: 14,
+  baseYaw: -28,
+  basePitch: 22,
   camPanX: -26,
   camPanY: 0
 }
@@ -124,40 +124,40 @@ function generateRandomSteps(numChunks: number): CycleStep[] {
       nextYaw = shortestAngle(curYaw, targetBase)
     }
 
-    // Dynamic base tilt & cam pan
-    let baseYaw = -24
-    let basePitch = 14
+    // Dynamic steep isometric perspective & cam pan
+    let baseYaw = -28
+    let basePitch = 22
     let camPanX = 0
     let camPanY = 0
 
     if (nextFace === 4) {
-      baseYaw = (Math.random() > 0.5 ? 1 : -1) * (14 + Math.random() * 4)
-      basePitch = -20 - Math.random() * 4
+      baseYaw = (Math.random() > 0.5 ? 1 : -1) * (20 + Math.random() * 6)
+      basePitch = -24 - Math.random() * 4
       camPanX = 0
       camPanY = -22
     } else if (nextFace === 5) {
-      baseYaw = (Math.random() > 0.5 ? 1 : -1) * (14 + Math.random() * 4)
-      basePitch = 20 + Math.random() * 4
+      baseYaw = (Math.random() > 0.5 ? 1 : -1) * (20 + Math.random() * 6)
+      basePitch = 24 + Math.random() * 4
       camPanX = 0
       camPanY = 22
     } else if (nextFace === 1) {
-      baseYaw = 22 + Math.random() * 4
-      basePitch = 12 + Math.random() * 4
+      baseYaw = 28 + Math.random() * 6
+      basePitch = 22 + Math.random() * 4
       camPanX = 26
       camPanY = 0
     } else if (nextFace === 3) {
-      baseYaw = -22 - Math.random() * 4
-      basePitch = 12 + Math.random() * 4
+      baseYaw = -28 - Math.random() * 6
+      basePitch = 22 + Math.random() * 4
       camPanX = -26
       camPanY = 0
     } else if (nextFace === 2) {
-      baseYaw = (Math.random() > 0.5 ? 1 : -1) * (20 + Math.random() * 4)
-      basePitch = 14 + Math.random() * 4
+      baseYaw = (Math.random() > 0.5 ? 1 : -1) * (28 + Math.random() * 6)
+      basePitch = 22 + Math.random() * 4
       camPanX = baseYaw > 0 ? 24 : -24
       camPanY = 0
     } else {
-      baseYaw = (Math.random() > 0.5 ? 1 : -1) * (22 + Math.random() * 4)
-      basePitch = 14 + Math.random() * 4
+      baseYaw = (Math.random() > 0.5 ? 1 : -1) * (28 + Math.random() * 6)
+      basePitch = 22 + Math.random() * 4
       camPanX = baseYaw > 0 ? 24 : -24
       camPanY = 0
     }
@@ -603,9 +603,9 @@ export function createShip(withIcons = false): StageStyle {
         if (wordSince < WORD_ENTER_MS + 60) isEnteringWord = true
       }
 
-      // Camera pulls back dynamically during cube rotation for a wide sweeping view of the turn (-120px)
+      // Camera pulls back dynamically during cube rotation for a wide sweeping view of the turn (-220px)
       const turnPeak = Math.sin(turnProgress * Math.PI)
-      const pullBackZ = turnPeak * -120
+      const pullBackZ = turnPeak * -220
       const turnPanX = turnPeak * (activeTransition ? (activeTransition.toStep.camPanX - activeTransition.fromStep.camPanX) * 0.5 : 0)
       const turnPanY = turnPeak * (activeTransition ? (activeTransition.toStep.camPanY - activeTransition.fromStep.camPanY) * 0.5 : 0)
 
@@ -632,6 +632,24 @@ export function createShip(withIcons = false): StageStyle {
         if (face.currentChunkIndex < 0 || face.currentChunkIndex >= chunks.length) continue
         const chunk = chunks[face.currentChunkIndex]!
         const isCurrentFace = face.slotIndex === currentFaceIdx
+        const isTargetFace = face.slotIndex === targetFaceIdx
+
+        // 3D Lighting & Depth Shading:
+        // Active face is in full spotlight; target face brightens up smoothly during roll;
+        // side and receding faces have natural spatial depth shading.
+        let faceBrightness = 0.45
+        let faceOpacity = 0.50
+
+        if (isCurrentFace) {
+          faceBrightness = isRotating ? lerp(1, 0.65, turnProgress) : 1
+          faceOpacity = isRotating ? lerp(1, 0.7, turnProgress) : 1
+        } else if (isTargetFace) {
+          faceBrightness = isRotating ? lerp(0.5, 1, turnProgress) : 0.65
+          faceOpacity = isRotating ? lerp(0.55, 1, turnProgress) : 0.75
+        }
+
+        setStyle(face.faceEl, 'filter', `brightness(${faceBrightness.toFixed(3)})`)
+        setStyle(face.faceEl, 'opacity', faceOpacity.toFixed(3))
 
         for (let j = 0; j < chunk.wordIndices.length; j++) {
           const wIdx = chunk.wordIndices[j]!
@@ -700,8 +718,8 @@ export function createShip(withIcons = false): StageStyle {
             const isPreviousChunk = chunk.index < activeChunkIdx
             const isTargetFace = face.slotIndex === targetFaceIdx
             const sideColor = isTargetFace ? palette.highlightText : isPreviousChunk ? palette.lyric : palette.secondary
-            setStyle(el.root, 'transform', 'scale(1)')
-            setStyle(el.root, 'opacity', isTargetFace ? '0.88' : isPreviousChunk ? '0.78' : '0.82')
+            setStyle(el.root, 'transform', 'scale(0.94)')
+            setStyle(el.root, 'opacity', isTargetFace ? '0.90' : '0.70')
             setStyle(el.box, 'opacity', '0')
             setStyle(el.box, 'transform', 'scaleX(0)')
             setStyle(el.box, 'box-shadow', 'none')
