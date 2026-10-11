@@ -40,7 +40,7 @@ body[data-mode='lock'] {
 .tesseract-scene {
   position: absolute;
   inset: 0;
-  perspective: 850px;
+  perspective: 580px;
   perspective-origin: 50% 50%;
   overflow: hidden;
   pointer-events: none;
