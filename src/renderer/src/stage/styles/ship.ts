@@ -124,40 +124,40 @@ function generateRandomSteps(numChunks: number): CycleStep[] {
       nextYaw = shortestAngle(curYaw, targetBase)
     }
 
-    // Dynamic steep isometric perspective & cam pan
+    // Steeper isometric base tilt & cam pan so 3 faces are clearly visible at once
     let baseYaw = -28
     let basePitch = 22
     let camPanX = 0
     let camPanY = 0
 
     if (nextFace === 4) {
-      baseYaw = (Math.random() > 0.5 ? 1 : -1) * (20 + Math.random() * 6)
-      basePitch = -24 - Math.random() * 4
+      baseYaw = (Math.random() > 0.5 ? 1 : -1) * (18 + Math.random() * 6)
+      basePitch = -26 - Math.random() * 6
       camPanX = 0
-      camPanY = -22
+      camPanY = -24
     } else if (nextFace === 5) {
-      baseYaw = (Math.random() > 0.5 ? 1 : -1) * (20 + Math.random() * 6)
-      basePitch = 24 + Math.random() * 4
+      baseYaw = (Math.random() > 0.5 ? 1 : -1) * (18 + Math.random() * 6)
+      basePitch = 26 + Math.random() * 6
       camPanX = 0
-      camPanY = 22
+      camPanY = 24
     } else if (nextFace === 1) {
       baseYaw = 28 + Math.random() * 6
-      basePitch = 22 + Math.random() * 4
+      basePitch = 22 + Math.random() * 6
       camPanX = 26
       camPanY = 0
     } else if (nextFace === 3) {
       baseYaw = -28 - Math.random() * 6
-      basePitch = 22 + Math.random() * 4
+      basePitch = 22 + Math.random() * 6
       camPanX = -26
       camPanY = 0
     } else if (nextFace === 2) {
-      baseYaw = (Math.random() > 0.5 ? 1 : -1) * (28 + Math.random() * 6)
-      basePitch = 22 + Math.random() * 4
+      baseYaw = (Math.random() > 0.5 ? 1 : -1) * (26 + Math.random() * 6)
+      basePitch = 22 + Math.random() * 6
       camPanX = baseYaw > 0 ? 24 : -24
       camPanY = 0
     } else {
-      baseYaw = (Math.random() > 0.5 ? 1 : -1) * (28 + Math.random() * 6)
-      basePitch = 22 + Math.random() * 4
+      baseYaw = (Math.random() > 0.5 ? 1 : -1) * (26 + Math.random() * 6)
+      basePitch = 22 + Math.random() * 6
       camPanX = baseYaw > 0 ? 24 : -24
       camPanY = 0
     }
@@ -198,18 +198,18 @@ function buildTransitions(chunks: LyricChunk[], steps: CycleStep[]): ChunkTransi
     const toStep = steps[k + 1] ?? DEFAULT_STEP
 
     const gap = next.start - cur.end
-    let duration = 460
-    let startMs = cur.end - 120
+    let duration = 520
+    let startMs = cur.end - 140
 
     if (gap > 360) {
-      duration = Math.min(540, Math.max(380, gap * 0.7))
+      duration = Math.min(620, Math.max(460, gap * 0.75))
       startMs = next.start - duration
     } else if (gap > 0) {
-      duration = Math.min(480, Math.max(320, gap + 160))
+      duration = Math.min(540, Math.max(380, gap + 180))
       startMs = cur.end - 80
     } else {
-      duration = 400
-      startMs = cur.end - 160
+      duration = 460
+      startMs = cur.end - 180
     }
 
     trans.push({
@@ -603,9 +603,9 @@ export function createShip(withIcons = false): StageStyle {
         if (wordSince < WORD_ENTER_MS + 60) isEnteringWord = true
       }
 
-      // Camera pulls back dynamically during cube rotation for a wide sweeping view of the turn (-220px)
+      // Camera pulls back dynamically during cube rotation for a wide sweeping view of the turn (-240px)
       const turnPeak = Math.sin(turnProgress * Math.PI)
-      const pullBackZ = turnPeak * -220
+      const pullBackZ = turnPeak * -240
       const turnPanX = turnPeak * (activeTransition ? (activeTransition.toStep.camPanX - activeTransition.fromStep.camPanX) * 0.5 : 0)
       const turnPanY = turnPeak * (activeTransition ? (activeTransition.toStep.camPanY - activeTransition.fromStep.camPanY) * 0.5 : 0)
 
@@ -632,24 +632,6 @@ export function createShip(withIcons = false): StageStyle {
         if (face.currentChunkIndex < 0 || face.currentChunkIndex >= chunks.length) continue
         const chunk = chunks[face.currentChunkIndex]!
         const isCurrentFace = face.slotIndex === currentFaceIdx
-        const isTargetFace = face.slotIndex === targetFaceIdx
-
-        // 3D Lighting & Depth Shading:
-        // Active face is in full spotlight; target face brightens up smoothly during roll;
-        // side and adjacent faces stay clearly visible with high contrast and readable text.
-        let faceBrightness = 0.82
-        let faceOpacity = 0.88
-
-        if (isCurrentFace) {
-          faceBrightness = isRotating ? lerp(1, 0.85, turnProgress) : 1
-          faceOpacity = 1
-        } else if (isTargetFace) {
-          faceBrightness = isRotating ? lerp(0.85, 1, turnProgress) : 0.92
-          faceOpacity = isRotating ? lerp(0.90, 1, turnProgress) : 0.96
-        }
-
-        setStyle(face.faceEl, 'filter', `brightness(${faceBrightness.toFixed(3)})`)
-        setStyle(face.faceEl, 'opacity', faceOpacity.toFixed(3))
 
         for (let j = 0; j < chunk.wordIndices.length; j++) {
           const wIdx = chunk.wordIndices[j]!
@@ -718,13 +700,13 @@ export function createShip(withIcons = false): StageStyle {
             const isPreviousChunk = chunk.index < activeChunkIdx
             const isTargetFace = face.slotIndex === targetFaceIdx
             const sideColor = isTargetFace ? palette.highlightText : isPreviousChunk ? palette.lyric : palette.secondary
-            setStyle(el.root, 'transform', 'scale(0.96)')
-            setStyle(el.root, 'opacity', isTargetFace ? '0.96' : '0.86')
+            setStyle(el.root, 'transform', 'scale(1)')
+            setStyle(el.root, 'opacity', isTargetFace ? '0.88' : isPreviousChunk ? '0.78' : '0.82')
             setStyle(el.box, 'opacity', '0')
             setStyle(el.box, 'transform', 'scaleX(0)')
             setStyle(el.box, 'box-shadow', 'none')
             setStyle(el.text, 'color', sideColor)
-            setStyle(el.text, 'text-shadow', isTargetFace ? `0 0 16px ${rgba(palette.highlight, 0.55)}` : `0 0 8px rgba(0, 0, 0, 0.35)`)
+            setStyle(el.text, 'text-shadow', isTargetFace ? `0 0 14px ${rgba(palette.highlight, 0.45)}` : 'none')
             if (el.icon && el.iconRef?.kind === 'fluent') {
               if (el.iconColor !== sideColor) {
                 el.icon.innerHTML = fluentSvg(el.iconRef, sideColor)
