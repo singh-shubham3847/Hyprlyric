@@ -434,11 +434,11 @@ export function createShip(withIcons = false): StageStyle {
         for (const f of faces) f.currentChunkIndex = -1
       }
 
-      // Responsive cube proportions
-      const cubeSize = Math.max(280, Math.min(W * 0.48, H * 0.44, 460))
+      // Responsive cube proportions fitting all 3 visible faces comfortably
+      const cubeSize = Math.max(260, Math.min(W * 0.42, H * 0.40, 420))
       const radius = cubeSize * 0.5
-      // Bold, close-up typography
-      const fontSize = Math.max(34, Math.min(cubeSize * 0.16, 68))
+      // Bold typography
+      const fontSize = Math.max(32, Math.min(cubeSize * 0.155, 64))
 
       pivot.style.width = `${cubeSize.toFixed(1)}px`
       pivot.style.height = `${cubeSize.toFixed(1)}px`
@@ -563,33 +563,30 @@ export function createShip(withIcons = false): StageStyle {
       const chunkAssignments = new Map<number, number>()
       chunkAssignments.set(currentFaceIdx, activeChunkIdx)
       if (targetFaceIdx !== currentFaceIdx) {
-        chunkAssignments.set(targetFaceIdx, activeChunkIdx + 1)
+        chunkAssignments.set(targetFaceIdx, (activeChunkIdx + 1) % chunks.length)
       }
 
       const assignedFaces = new Set<number>([currentFaceIdx, targetFaceIdx])
       const remainingFaces = [0, 1, 2, 3, 4, 5].filter((f) => !assignedFaces.has(f))
-      const pool = [
-        activeChunkIdx - 1 >= 0 ? activeChunkIdx - 1 : activeChunkIdx + 2,
-        activeChunkIdx + 2,
-        activeChunkIdx - 2 >= 0 ? activeChunkIdx - 2 : activeChunkIdx + 3,
-        activeChunkIdx + 3
-      ]
+      const offsets = [1, -1, 2, -2]
       for (let i = 0; i < remainingFaces.length; i++) {
-        chunkAssignments.set(remainingFaces[i]!, pool[i] ?? -1)
+        const off = offsets[i] ?? (i + 1)
+        const wrappedIdx = (activeChunkIdx + off + chunks.length * 10) % chunks.length
+        chunkAssignments.set(remainingFaces[i]!, wrappedIdx)
       }
 
       for (const face of faces) {
-        const cIdx = chunkAssignments.get(face.slotIndex) ?? -1
+        const cIdx = chunkAssignments.get(face.slotIndex) ?? 0
         populateFace(face, cIdx, fontSize)
       }
 
-      // Close-up Camera Movement
+      // Camera Framing: position camera so front, top, and side faces stay completely in frame
       const activeWordIdx = activeWordIndex(model, t)
       const currentWord = model.words[activeWordIdx]
       let isEnteringWord = false
 
-      // Intimate, close-up camera distance with generous margin for surrounding faces
-      const baseCamZ = 85
+      // Backed-up camera distance so top & side lyrics are completely visible on-screen
+      const baseCamZ = -40
       let vocalPushZ = 0
       let camPanX = 0
       let camPanY = 0
@@ -701,12 +698,12 @@ export function createShip(withIcons = false): StageStyle {
             const isTargetFace = face.slotIndex === targetFaceIdx
             const sideColor = isTargetFace ? palette.highlightText : isPreviousChunk ? palette.lyric : palette.secondary
             setStyle(el.root, 'transform', 'scale(1)')
-            setStyle(el.root, 'opacity', isTargetFace ? '0.88' : isPreviousChunk ? '0.78' : '0.82')
+            setStyle(el.root, 'opacity', isTargetFace ? '0.98' : '0.88')
             setStyle(el.box, 'opacity', '0')
             setStyle(el.box, 'transform', 'scaleX(0)')
             setStyle(el.box, 'box-shadow', 'none')
             setStyle(el.text, 'color', sideColor)
-            setStyle(el.text, 'text-shadow', isTargetFace ? `0 0 14px ${rgba(palette.highlight, 0.45)}` : 'none')
+            setStyle(el.text, 'text-shadow', isTargetFace ? `0 0 16px ${rgba(palette.highlight, 0.6)}` : `0 0 8px rgba(0, 0, 0, 0.45)`)
             if (el.icon && el.iconRef?.kind === 'fluent') {
               if (el.iconColor !== sideColor) {
                 el.icon.innerHTML = fluentSvg(el.iconRef, sideColor)
